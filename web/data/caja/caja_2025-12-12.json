@@ -1,0 +1,15 @@
+{
+  "apertura": null,
+  "cierre": null,
+  "movimientos": [
+    {
+      "tipo": "VENTA",
+      "tipo_pago": "EFECTIVO",
+      "monto": 21.98,
+      "detalles": "Venta de 1 productos - Cliente: pedro",
+      "fecha_hora": "2025-12-12T09:24:56.517681",
+      "hora": "09:24"
+    }
+  ],
+  "fecha_actualizacion": "2025-12-12T09:24:56.517775"
+}

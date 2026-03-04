@@ -1,0 +1,572 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Inicio
+                    </h1>
+                    <p class="text-muted mb-0">
+                        {{ fecha }} | <span id="current-time">{{ hora }}</span>
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-light" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                    <button class="btn btn-success" onclick="location.href='/ventas'">
+                        <i class="fas fa-plus me-1"></i> Nueva Venta
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="probarConfiguracion()">
+                        <i class="fas fa-stethoscope"></i> Diagnóstico
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estado de Caja -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card shadow">
+                <div class="card-header bg-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cash-register me-2"></i>
+                        Estado de Caja
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="caja-status">
+                        {% if estado_caja.estado == 'abierta' %}
+                        <div class="row text-center">
+                            <div class="col-md-3 mb-3">
+                                <div class="stat-card">
+                                    <div class="stat-number">${{ "%.2f"|format(estado_caja.monto_inicial) }}</div>
+                                    <div class="stat-label">Fondo Inicial</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="stat-card">
+                                    <div class="stat-number">${{ "%.2f"|format(estado_caja.ventas_efectivo) }}</div>
+                                    <div class="stat-label">Ventas Efectivo</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="stat-card">
+                                    <div class="stat-number">${{ "%.2f"|format(estado_caja.ventas_tarjeta) }}</div>
+                                    <div class="stat-label">Ventas Tarjeta</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="stat-card">
+                                    <div class="stat-number">${{ "%.2f"|format(estado_caja.efectivo_esperado) }}</div>
+                                    <div class="stat-label">Efectivo Esperado</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Caja Abierta</strong> por {{ estado_caja.responsable }} desde {{ estado_caja.hora_apertura }}
+                            <span class="float-end">
+                                <button class="btn btn-sm btn-outline-light" onclick="location.href='/caja'">
+                                    <i class="fas fa-edit me-1"></i> Gestionar
+                                </button>
+                            </span>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning text-center py-4">
+                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                            <h4>¡Caja Cerrada!</h4>
+                            <p class="mb-3">Debe abrir la caja para comenzar a operar</p>
+                            <button class="btn btn-primary btn-lg" onclick="openCajaModal()">
+                                <i class="fas fa-lock-open me-2"></i> Abrir Caja
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Resumen del Día
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ estado_caja.cantidad_ventas or 0 }}</div>
+                                <div class="stat-label">Ventas Hoy</div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="stat-card">
+                                <div class="stat-number">${{ "%.2f"|format(estado_caja.total_ventas or 0) }}</div>
+                                <div class="stat-label">Total Ventas</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress mb-2" style="height: 20px;">
+                        <div class="progress-bar bg-success" style="width: 70%;">Efectivo 70%</div>
+                    </div>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-info" style="width: 30%;">Tarjeta 30%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow h-100">
+                <div class="card-header bg-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>
+                        Acciones Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button class="btn btn-outline-primary w-100 py-3" onclick="location.href='/ventas'">
+                                <i class="fas fa-cart-plus fa-2x mb-2"></i><br>
+                                Nueva Venta
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-success w-100 py-3" onclick="quickSale('EFECTIVO')">
+                                <i class="fas fa-money-bill-wave fa-2x mb-2"></i><br>
+                                Venta Rápida
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-warning w-100 py-3" onclick="location.href='/caja'">
+                                <i class="fas fa-file-invoice-dollar fa-2x mb-2"></i><br>
+                                Ver Movimientos
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button class="btn btn-outline-info w-100 py-3" onclick="location.href='/reportes'">
+                                <i class="fas fa-chart-pie fa-2x mb-2"></i><br>
+                                Reportes
+                                <small class="d-block mt-1" id="reportes-status">
+                                    <i class="fas fa-circle text-success"></i> Disponible
+                                </small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimas Ventas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Últimas Transacciones
+                    </h5>
+                    <small class="text-muted">Actualizado hace <span id="update-time">0</span> seg</small>
+                </div>
+                <div class="card-body">
+                    <div id="last-transactions">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2">Cargando transacciones...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para abrir caja -->
+<div class="modal fade" id="openCajaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-lock-open me-2"></i>
+                    Abrir Caja
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="openCajaForm">
+                    <div class="mb-3">
+                        <label for="montoInicial" class="form-label">Monto Inicial</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="montoInicial" 
+                                   step="0.01" min="0" value="1000" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="responsable" class="form-label">Responsable</label>
+                        <input type="text" class="form-control" id="responsable" 
+                               value="Administrador" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="submitOpenCaja()">
+                    <i class="fas fa-check me-1"></i> Abrir Caja
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para venta rápida -->
+<div class="modal fade" id="quickSaleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-bolt me-2"></i>
+                    Venta Rápida
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quickSaleForm">
+                    <div class="mb-3">
+                        <label for="saleAmount" class="form-label">Monto</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="saleAmount" 
+                                   step="0.01" min="1" value="100" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="paymentType" class="form-label">Tipo de Pago</label>
+                        <select class="form-select" id="paymentType">
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="TARJETA">Tarjeta</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="submitQuickSale()">
+                    <i class="fas fa-check me-1"></i> Registrar Venta
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let updateTimer = 0;
+
+// Actualizar datos automáticamente
+function refreshData() {
+    fetch('/api/estado-caja')
+        .then(response => response.json())
+        .then(data => {
+            updateCajaStatus(data);
+        })
+        .catch(error => {
+            console.error('Error actualizando estado de caja:', error);
+        });
+    
+    fetch('/api/movimientos')
+        .then(response => response.json())
+        .then(data => {
+            updateTransactions(data.movimientos);
+        })
+        .catch(error => {
+            console.error('Error actualizando transacciones:', error);
+            updateTransactions([]);
+        });
+    
+    updateTimer = 0;
+    const updateTimeElement = document.getElementById('update-time');
+    if (updateTimeElement) {
+        updateTimeElement.textContent = updateTimer;
+    }
+}
+
+// Actualizar estado de caja
+function updateCajaStatus(data) {
+    const statusDiv = document.getElementById('caja-status');
+    if (!statusDiv) return;
+    
+    if (data.estado === 'abierta') {
+        statusDiv.innerHTML = `
+            <div class="row text-center">
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-number">$${data.monto_inicial?.toFixed(2) || '0.00'}</div>
+                        <div class="stat-label">Fondo Inicial</div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-number">$${data.ventas_efectivo?.toFixed(2) || '0.00'}</div>
+                        <div class="stat-label">Ventas Efectivo</div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-number">$${data.ventas_tarjeta?.toFixed(2) || '0.00'}</div>
+                        <div class="stat-label">Ventas Tarjeta</div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-number">$${data.efectivo_esperado?.toFixed(2) || '0.00'}</div>
+                        <div class="stat-label">Efectivo Esperado</div>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Caja Abierta</strong> por ${data.responsable || 'Administrador'} desde ${data.hora_apertura || 'N/A'}
+                <span class="float-end">
+                    <button class="btn btn-sm btn-outline-light" onclick="location.href='/caja'">
+                        <i class="fas fa-edit me-1"></i> Gestionar
+                    </button>
+                </span>
+            </div>
+        `;
+    } else {
+        statusDiv.innerHTML = `
+            <div class="alert alert-warning text-center py-4">
+                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                <h4>¡Caja Cerrada!</h4>
+                <p class="mb-3">Debe abrir la caja para comenzar a operar</p>
+                <button class="btn btn-primary btn-lg" onclick="openCajaModal()">
+                    <i class="fas fa-lock-open me-2"></i> Abrir Caja
+                </button>
+            </div>
+        `;
+    }
+}
+
+// Actualizar transacciones
+function updateTransactions(movimientos) {
+    const container = document.getElementById('last-transactions');
+    if (!container) return;
+    
+    if (!movimientos || movimientos.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No hay transacciones registradas</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    movimientos.slice(-5).reverse().forEach(mov => {
+        const tipo = mov.tipo === 'VENTA' ? 'success' : 
+                    mov.tipo === 'GASTO' ? 'danger' : 'warning';
+        const icon = mov.tipo === 'VENTA' ? 'fa-cart-plus' : 
+                    mov.tipo === 'GASTO' ? 'fa-money-bill-wave' : 'fa-exchange-alt';
+        html += `
+            <div class="list-group-item bg-transparent border-secondary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-${tipo} me-2">
+                            <i class="fas ${icon} me-1"></i>
+                            ${mov.tipo || 'TRANSACCIÓN'}
+                        </span>
+                        <strong>$${Math.abs(mov.monto).toFixed(2)}</strong>
+                        <small class="text-muted ms-2">${mov.tipo_pago || ''}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">${mov.hora || ''}</small>
+                        <br>
+                        <small>${mov.detalles || 'Sin detalles'}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Abrir modal de caja
+function openCajaModal() {
+    const modalElement = document.getElementById('openCajaModal');
+    if (!modalElement) return;
+    
+    const modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
+
+// Enviar apertura de caja
+function submitOpenCaja() {
+    const monto = document.getElementById('montoInicial').value;
+    const responsable = document.getElementById('responsable').value;
+    
+    fetch('/api/abrir-caja', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ monto, responsable })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✅ Caja Abierta', `Caja abierta con $${monto} por ${responsable}`);
+            const modalElement = document.getElementById('openCajaModal');
+            if (modalElement) {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) modal.hide();
+            }
+            refreshData();
+        } else {
+            showNotification('❌ Error', data.error || 'Error al abrir caja', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('❌ Error', 'Error de conexión', 'error');
+    });
+}
+
+// Venta rápida
+function quickSale(paymentType) {
+    const modalElement = document.getElementById('quickSaleModal');
+    if (!modalElement) return;
+    
+    const modal = new bootstrap.Modal(modalElement);
+    if (paymentType && document.getElementById('paymentType')) {
+        document.getElementById('paymentType').value = paymentType;
+    }
+    modal.show();
+}
+
+// Enviar venta rápida
+function submitQuickSale() {
+    const monto = document.getElementById('saleAmount').value;
+    const tipoPago = document.getElementById('paymentType').value;
+    
+    fetch('/api/registrar-venta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ monto, tipo_pago: tipoPago })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✅ Venta Registrada', `Venta de $${monto} registrada`);
+            const modalElement = document.getElementById('quickSaleModal');
+            if (modalElement) {
+                const modal = bootstrap.Modal.getInstance(modalElement);
+                if (modal) modal.hide();
+            }
+            refreshData();
+        } else {
+            showNotification('❌ Error', data.error || 'Error al registrar venta', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('❌ Error', 'Error de conexión', 'error');
+    });
+}
+
+// Función para mostrar notificaciones (si no existe)
+function showNotification(title, message, type = 'success') {
+    // Si no tienes un sistema de notificaciones, usa alert temporal
+    alert(`${title}: ${message}`);
+}
+
+// Verificar estado de Django
+async function verificarEstadoDjango() {
+    try {
+        const response = await fetch('/api/sistema/estado');
+        const data = await response.json();
+        
+        const djangoService = data.servicios.find(s => s.nombre === 'Django Reportes');
+        const statusElement = document.getElementById('reportes-status');
+        
+        if (statusElement && djangoService) {
+            if (djangoService.estado === 'online') {
+                statusElement.innerHTML = '<i class="fas fa-circle text-success"></i> Online';
+                statusElement.classList.remove('text-danger');
+                statusElement.classList.add('text-success');
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-circle text-danger"></i> Offline';
+                statusElement.classList.remove('text-success');
+                statusElement.classList.add('text-danger');
+            }
+        }
+    } catch (error) {
+        console.log('No se pudo verificar estado de Django:', error);
+    }
+}
+
+// Función para probar toda la configuración
+function probarConfiguracion() {
+    fetch('/api/sistema/estado')
+        .then(response => response.json())
+        .then(data => {
+            let html = `
+                <div class="text-start">
+                    <h6>Configuración detectada:</h6>
+                    <ul>
+                        <li><strong>IP Local:</strong> ${data.config.local_ip}</li>
+                        <li><strong>Flask URL:</strong> ${data.config.flask_url}</li>
+                        <li><strong>Django URL:</strong> ${data.config.django_url}</li>
+                    </ul>
+                    
+                    <h6 class="mt-3">Estado de servicios:</h6>
+            `;
+            
+            data.servicios.forEach(servicio => {
+                const icon = servicio.estado === 'online' ? '✅' : '❌';
+                html += `<li>${icon} <strong>${servicio.nombre}:</strong> ${servicio.estado}</li>`;
+            });
+            
+            html += `</ul></div>`;
+            
+            alert('Diagnóstico del Sistema:\n\n' + html.replace(/<[^>]*>/g, ''));
+        });
+}
+
+// Cargar datos iniciales
+document.addEventListener('DOMContentLoaded', function() {
+    refreshData();
+    verificarEstadoDjango();
+    
+    // Actualizar cada 30 segundos
+    setInterval(refreshData, 30000);
+    setInterval(verificarEstadoDjango, 30000);
+    
+    // Actualizar contador cada segundo
+    setInterval(() => {
+        updateTimer++;
+        const updateTimeElement = document.getElementById('update-time');
+        if (updateTimeElement) {
+            updateTimeElement.textContent = updateTimer;
+        }
+    }, 1000);
+});
+</script>
+{% endblock %}

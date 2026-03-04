@@ -1,0 +1,200 @@
+.
+├── =2.0.0
+├── =7.0.0
+├── app
+│   ├── aplicacion
+│   │   ├── commands
+│   │   ├── queries
+│   │   └── servicios
+│   ├── backend_api.py
+│   ├── caja.py
+│   ├── dashboard_data.py
+│   ├── dashboard.py
+│   ├── dominio
+│   │   ├── entities
+│   │   ├── exceptions
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   ├── services
+│   │   ├── test_venta.py
+│   │   └── value_objects
+│   ├── infraestructura
+│   │   ├── __init__.py
+│   │   ├── persistence
+│   │   └── __pycache__
+│   ├── init_db.py
+│   ├── __init__.py
+│   ├── init_simple.py
+│   ├── interfaz
+│   │   ├── api
+│   │   ├── cli
+│   │   └── web
+│   ├── main.py
+│   ├── persistencia.py
+│   ├── procesos.py
+│   ├── __pycache__
+│   │   ├── backend_api.cpython-311.pyc
+│   │   ├── caja.cpython-311.pyc
+│   │   ├── dashboard.cpython-311.pyc
+│   │   ├── dashboard_data.cpython-311.pyc
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── main.cpython-311.pyc
+│   │   ├── modelos.cpython-311.pyc
+│   │   ├── persistencia.cpython-311.pyc
+│   │   └── procesos.cpython-311.pyc
+│   └── run_dashboard.py
+├── bin
+│   ├── activate
+│   ├── activate.csh
+│   ├── activate.fish
+│   ├── Activate.ps1
+│   ├── pip
+│   ├── pip3
+│   ├── pip3.11
+│   ├── python -> python3
+│   ├── python3 -> /usr/bin/python3
+│   └── python3.11 -> python3
+├── bootstrap_hexagonal.sh
+├── config.py
+├── contexto_proyecto.md
+├── core
+│   ├── adapters
+│   │   └── persistence
+│   ├── application
+│   │   ├── __init__.py
+│   │   ├── ports
+│   │   ├── __pycache__
+│   │   └── use_cases
+│   ├── domain
+│   │   ├── entities
+│   │   ├── exceptions
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   ├── services
+│   │   └── value_objects
+│   ├── __init__.py
+│   └── __pycache__
+│       └── __init__.cpython-311.pyc
+├── data
+│   ├── caja
+│   └── carniceria_orm.db
+├── demo_hexagonal_fixed.py
+├── demo_hexagonal.py
+├── django
+├── fix_main.py
+├── iniciar.sh
+├── iniciar_todo.sh
+├── inspect
+├── legacy
+│   └── test_procesos.py
+├── mapa.txt
+├── os
+├── proyecto_limpio.md
+├── __pycache__
+│   └── test_venta_local.cpython-311-pytest-9.0.2.pyc
+├── pytest.ini
+├── README.MD
+├── requirements.txt
+├── scripts
+│   ├── iniciar_cli.sh
+│   ├── iniciar_sistema.sh
+│   ├── iniciar_web.sh
+│   ├── __pycache__
+│   │   └── validar_dominio.cpython-311.pyc
+│   └── validar_dominio.py
+├── start_system.sh
+├── start_web.sh
+├── structure.md
+├── sys
+├── test_arquitectura_completa.sh
+├── tests
+│   ├── aplicacion
+│   ├── domain
+│   │   ├── __pycache__
+│   │   ├── test_cancelar_venta_credito_con_pago.py
+│   │   ├── test_cancelar_venta_credito_revierte_deuda.py
+│   │   ├── test_cliente_credito_red_sprint1.py
+│   │   ├── test_credito_independiente_de_presentacion.py
+│   │   ├── test_no_se_puede_pagar_venta_cancelada.py
+│   │   ├── test_producto.py
+│   │   ├── test_venta_cancelada_no_paga.py
+│   │   ├── test_venta_credito_presentaciones_mixtas.py
+│   │   ├── test_venta_credito_red_sprint1.py
+│   │   ├── test_venta_credito_registra_deuda.py
+│   │   ├── test_venta_credito_saldada.py
+│   │   ├── test_venta_estado_saldada.py
+│   │   ├── test_venta_pago_estado_invalido.py
+│   │   ├── test_venta_pago_excesivo.py
+│   │   ├── test_venta_pago.py
+│   │   ├── test_venta_pago_saldada.py
+│   │   ├── test_venta_pagos_parciales.py
+│   │   ├── test_venta.py
+│   │   ├── test_venta_red_sprint1_dia2.py
+│   │   ├── test_venta_red_sprint1.py
+│   │   ├── test_venta_saldada_inmutable.py
+│   │   ├── test_venta_saldada_no_cancelable.py
+│   │   └── test_venta_saldo_pendiente.py
+│   ├── __init__.py
+│   └── __pycache__
+│       ├── __init__.cpython-311.pyc
+│       ├── test_procesos.cpython-311.pyc
+│       ├── test_procesos.cpython-311-pytest-7.2.1.pyc
+│       └── test_procesos.cpython-311-pytest-9.0.2.pyc
+├── test_venta_local.py
+├── unificar.py
+├── uuid
+├── validar_dominio_actual.py
+├── venv
+│   ├── bin
+│   │   ├── activate
+│   │   ├── activate.csh
+│   │   ├── activate.fish
+│   │   ├── Activate.ps1
+│   │   ├── black
+│   │   ├── blackd
+│   │   ├── dotenv
+│   │   ├── flask
+│   │   ├── markdown-it
+│   │   ├── normalizer
+│   │   ├── pip
+│   │   ├── pip3
+│   │   ├── pip3.11
+│   │   ├── pygmentize
+│   │   ├── py.test
+│   │   ├── pytest
+│   │   ├── python -> python3.11
+│   │   ├── python3 -> python3.11
+│   │   └── python3.11 -> /usr/bin/python3.11
+│   ├── include
+│   │   ├── python3.11
+│   │   └── site
+│   ├── lib
+│   │   └── python3.11
+│   ├── lib64 -> lib
+│   └── pyvenv.cfg
+└── web
+    ├── app.py
+    ├── data
+    │   └── caja
+    ├── __pycache__
+    │   └── app.cpython-311.pyc
+    ├── static
+    │   ├── css
+    │   ├── img
+    │   └── js
+    ├── templates
+    │   ├── base.html
+    │   ├── caja.html
+    │   ├── dashboard.html
+    │   ├── error_django.html
+    │   ├── reportes_flask.html
+    │   ├── reportes.html
+    │   └── ventas.html
+    └── venv
+        ├── bin
+        ├── include
+        ├── lib
+        ├── lib64 -> lib
+        └── pyvenv.cfg
+
+68 directories, 130 files

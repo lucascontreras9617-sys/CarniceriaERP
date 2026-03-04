@@ -1,0 +1,548 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2 mb-0">
+                <i class="fas fa-chart-bar me-2"></i>
+                Reportes y Análisis
+            </h1>
+            {% if modo_simulacion %}
+            <div class="alert alert-info mt-2">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Modo simulación:</strong> Mostrando datos de ejemplo
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Botones de reportes -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>
+                        Reporte de Ventas
+                    </h5>
+                    <p class="card-text text-muted">
+                        Análisis detallado de ventas por período
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha inicio:</label>
+                        <input type="date" id="fecha-inicio" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Fecha fin:</label>
+                        <input type="date" id="fecha-fin" class="form-control">
+                    </div>
+                    <button id="btnReporteVentas" class="btn btn-primary btn-lg w-100"
+                            onclick="generarReporteVentas()">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Generar Reporte de Ventas
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">
+                        <i class="fas fa-box-open me-2"></i>
+                        Reporte de Inventario
+                    </h5>
+                    <p class="card-text text-muted">
+                        Estado actual del inventario y productos
+                    </p>
+                    <button id="btnReporteInventario" class="btn btn-success btn-lg w-100"
+                            onclick="generarReporteInventario()">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Generar Reporte de Inventario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div id="resultados-container" class="d-none">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0" id="titulo-reporte"></h5>
+                <button class="btn btn-sm btn-outline-light" onclick="exportarReporte()">
+                    <i class="fas fa-download me-1"></i> Exportar
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="resultados-contenido"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Pasar variable modo_simulacion de Flask a JavaScript usando un elemento oculto
+const modoSimulacion = {{ 'true' if modo_simulacion else 'false' }};
+
+// Configurar fechas por defecto
+document.addEventListener('DOMContentLoaded', function() {
+    const hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('fecha-inicio').value = hoy;
+    document.getElementById('fecha-fin').value = hoy;
+});
+
+// Generar reporte de ventas
+async function generarReporteVentas() {
+    const btn = document.getElementById('btnReporteVentas');
+    const originalHtml = btn.innerHTML;
+    
+    try {
+        // Mostrar estado de carga
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Procesando...';
+        btn.disabled = true;
+        
+        // Obtener fechas
+        const fechaInicio = document.getElementById('fecha-inicio').value;
+        const fechaFin = document.getElementById('fecha-fin').value;
+        
+        // Validar fechas
+        if (!fechaInicio || !fechaFin) {
+            throw new Error('Debe seleccionar ambas fechas');
+        }
+        
+        if (fechaInicio > fechaFin) {
+            throw new Error('La fecha de inicio no puede ser mayor a la fecha fin');
+        }
+        
+        // Llamar a la API
+        const response = await fetch(`/api/reporte-ventas?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`);
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Mostrar resultados
+        mostrarResultadosVentas(data, fechaInicio, fechaFin);
+        
+        // Mostrar notificación
+        showNotification('✅ Reporte Generado', 
+            `Reporte de ventas del ${fechaInicio} al ${fechaFin} generado correctamente`);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('❌ Error', 
+            `Error al generar reporte: ${error.message}`, 'error');
+    } finally {
+        // Restaurar botón
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+}
+
+// Generar reporte de inventario
+async function generarReporteInventario() {
+    const btn = document.getElementById('btnReporteInventario');
+    const originalHtml = btn.innerHTML;
+    
+    try {
+        // Mostrar estado de carga
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Procesando...';
+        btn.disabled = true;
+        
+        // Llamar a la API
+        const response = await fetch('/api/reporte-inventario');
+        
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Mostrar resultados
+        mostrarResultadosInventario(data);
+        
+        // Mostrar notificación
+        showNotification('✅ Reporte Generado', 
+            'Reporte de inventario generado correctamente');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('❌ Error', 
+            `Error al generar reporte: ${error.message}`, 'error');
+    } finally {
+        // Restaurar botón
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+}
+
+// Mostrar resultados de ventas
+function mostrarResultadosVentas(data, fechaInicio, fechaFin) {
+    const container = document.getElementById('resultados-container');
+    const contenido = document.getElementById('resultados-contenido');
+    const titulo = document.getElementById('titulo-reporte');
+    
+    // Mostrar el contenedor
+    container.classList.remove('d-none');
+    
+    titulo.innerHTML = '<i class="fas fa-file-invoice-dollar me-2"></i> Reporte de Ventas';
+    
+    let html = `
+        <div class="mb-4">
+            <h6>📅 Período: ${fechaInicio} al ${fechaFin}</h6>
+            <p class="text-muted">Total días: ${data.periodo?.dias || 1}</p>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h6>Total Ventas</h6>
+                        <h3>$${(data.resumen?.total_ventas || 0).toFixed(2)}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h6>Cantidad Ventas</h6>
+                        <h3>${data.resumen?.cantidad_ventas || 0}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h6>Promedio Diario</h6>
+                        <h3>$${(data.resumen?.promedio_diario || 0).toFixed(2)}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h6>Promedio Ticket</h6>
+                        <h3>$${(data.resumen?.promedio_ticket || 0).toFixed(2)}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">💳 Ventas por Tipo de Pago</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Monto</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+    `;
+    
+    // Mostrar tipos de pago
+    const tiposPago = data.por_tipo_pago || {};
+    const totalVentas = data.resumen?.total_ventas || 0;
+    
+    if (Object.keys(tiposPago).length > 0) {
+        for (const [tipo, monto] of Object.entries(tiposPago)) {
+            const porcentaje = totalVentas > 0 ? ((monto / totalVentas) * 100).toFixed(1) : '0.0';
+            html += `
+                <tr>
+                    <td>${tipo}</td>
+                    <td>$${monto.toFixed(2)}</td>
+                    <td>${porcentaje}%</td>
+                </tr>
+            `;
+        }
+    } else {
+        html += `
+            <tr>
+                <td colspan="3" class="text-center text-muted">
+                    No hay datos de tipos de pago
+                </td>
+            </tr>
+        `;
+    }
+    
+    html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">🏆 Productos Más Vendidos</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Cantidad</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+    `;
+    
+    // Productos más vendidos
+    const productos = data.productos_mas_vendidos || [];
+    if (productos.length > 0) {
+        productos.forEach(producto => {
+            const productoNombre = producto.producto || producto.nombre || 'Producto';
+            const cantidad = producto.cantidad ? producto.cantidad.toFixed(1) : '0.0';
+            const total = producto.total ? producto.total.toFixed(2) : '0.00';
+            html += `
+                <tr>
+                    <td>${productoNombre}</td>
+                    <td>${cantidad} kg</td>
+                    <td>$${total}</td>
+                </tr>
+            `;
+        });
+    } else {
+        html += `
+            <tr>
+                <td colspan="3" class="text-center text-muted">
+                    No hay datos de productos
+                </td>
+            </tr>
+        `;
+    }
+    
+    html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Usar la variable JavaScript para mostrar el mensaje
+    if (modoSimulacion) {
+        html += `
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Datos de ejemplo - Modo simulación
+            </div>
+        `;
+    }
+    
+    contenido.innerHTML = html;
+}
+
+// Mostrar resultados de inventario
+function mostrarResultadosInventario(data) {
+    const container = document.getElementById('resultados-container');
+    const contenido = document.getElementById('resultados-contenido');
+    const titulo = document.getElementById('titulo-reporte');
+    
+    // Mostrar el contenedor
+    container.classList.remove('d-none');
+    
+    titulo.innerHTML = '<i class="fas fa-box-open me-2"></i> Reporte de Inventario';
+    
+    let html = `
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h6>Total Productos</h6>
+                        <h3>${data.total_productos || 0}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h6>Valor Total</h6>
+                        <h3>$${(data.valor_total_inventario || 0).toFixed(2)}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <h6>Bajo Stock</h6>
+                        <h3>${data.productos_bajo_stock || 0}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body">
+                        <h6>Agotados</h6>
+                        <h3>${data.productos_agotados || 0}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">🏷️ Productos por Categoría</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Categoría</th>
+                                    <th>Cantidad</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+    `;
+    
+    // Mostrar categorías
+    const categorias = data.productos_por_categoria || {};
+    const totalProductos = data.total_productos || 0;
+    
+    if (Object.keys(categorias).length > 0) {
+        for (const [categoria, cantidad] of Object.entries(categorias)) {
+            const porcentaje = totalProductos > 0 ? ((cantidad / totalProductos) * 100).toFixed(1) : '0.0';
+            html += `
+                <tr>
+                    <td>${categoria}</td>
+                    <td>${cantidad}</td>
+                    <td>${porcentaje}%</td>
+                </tr>
+            `;
+        }
+    } else {
+        html += `
+            <tr>
+                <td colspan="3" class="text-center text-muted">
+                    No hay datos de categorías
+                </td>
+            </tr>
+        `;
+    }
+    
+    html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">🚨 Productos Críticos</h6>
+                    </div>
+                    <div class="card-body">
+    `;
+    
+    // Productos críticos
+    const productosCriticos = data.productos_criticos || [];
+    if (productosCriticos.length > 0) {
+        html += `
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Stock</th>
+                        <th>Umbral</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        productosCriticos.forEach(producto => {
+            const stock = producto.stock || 0;
+            const umbral = producto.umbral || 1;
+            const nombre = producto.nombre || 'Producto';
+            let estado = 'NORMAL';
+            let clase = 'success';
+            
+            if (stock <= 0) {
+                estado = 'AGOTADO';
+                clase = 'danger';
+            } else if (stock <= umbral * 0.1) {
+                estado = 'CRÍTICO';
+                clase = 'danger';
+            } else if (stock <= umbral * 0.3) {
+                estado = 'BAJO';
+                clase = 'warning';
+            }
+            
+            html += `
+                <tr>
+                    <td>${nombre}</td>
+                    <td>${stock.toFixed(1)} kg</td>
+                    <td>${umbral.toFixed(1)} kg</td>
+                    <td><span class="badge bg-${clase}">${estado}</span></td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                </tbody>
+            </table>
+        `;
+    } else {
+        html += `
+            <p class="text-center text-muted mb-0">
+                <i class="fas fa-check-circle text-success me-2"></i>
+                No hay productos críticos
+            </p>
+        `;
+    }
+    
+    html += `
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Usar la variable JavaScript para mostrar el mensaje
+    if (modoSimulacion) {
+        html += `
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Datos de ejemplo - Modo simulación
+            </div>
+        `;
+    }
+    
+    contenido.innerHTML = html;
+}
+
+// Exportar reporte (simulación)
+function exportarReporte() {
+    showNotification('📥 Exportar', 
+        'La exportación a PDF/Excel estará disponible en la próxima versión', 'info');
+}
+</script>
+{% endblock %}

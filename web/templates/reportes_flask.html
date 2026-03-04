@@ -1,0 +1,628 @@
+<!-- web/templates/reportes_flask.html - VERSIÓN CORREGIDA -->
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .card-reporte {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .card-reporte:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    
+    .stat-badge {
+        font-size: 0.8rem;
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    
+    .producto-item {
+        border-left: 4px solid var(--primary-color);
+        padding-left: 15px;
+        margin-bottom: 10px;
+    }
+    
+    .filter-card {
+        background: rgba(255,255,255,0.05);
+        border-radius: 10px;
+        padding: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Reportes del Sistema
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Análisis de ventas, inventario y rendimiento
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-light" onclick="window.history.back()">
+                        <i class="fas fa-arrow-left me-1"></i> Volver
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card filter-card">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-filter me-2"></i>Filtrar Reporte
+                    </h5>
+                    <form id="filtroReporte" class="row g-3">
+                        <div class="col-md-3">
+                            <label for="fechaInicio" class="form-label">Fecha Inicio</label>
+                            <input type="date" class="form-control" id="fechaInicio" 
+                                   value="{{ fecha_hace_7_dias }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="fechaFin" class="form-label">Fecha Fin</label>
+                            <input type="date" class="form-control" id="fechaFin" 
+                                   value="{{ fecha_actual }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="tipoReporte" class="form-label">Tipo de Reporte</label>
+                            <select class="form-select" id="tipoReporte">
+                                <option value="ventas">Ventas</option>
+                                <option value="inventario">Inventario</option>
+                                <option value="caja">Caja</option>
+                                <option value="productos">Productos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-primary w-100" onclick="cargarReporte()">
+                                <i class="fas fa-search me-1"></i> Generar Reporte
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card card-reporte bg-success bg-opacity-10">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Ventas Totales</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(reporte_ventas.resumen.total_ventas|default(0)) }}</h3>
+                            <small class="text-success">
+                                <i class="fas fa-arrow-up me-1"></i> {{ reporte_ventas.resumen.cantidad_ventas|default(0) }} ventas
+                            </small>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-success rounded-circle">
+                                <i class="fas fa-dollar-sign"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-reporte bg-info bg-opacity-10">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Promedio Diario</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(reporte_ventas.resumen.promedio_diario|default(0)) }}</h3>
+                            <small class="text-info">
+                                <i class="fas fa-calendar me-1"></i> {{ reporte_ventas.periodo.dias|default(1) }} días
+                            </small>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-info rounded-circle">
+                                <i class="fas fa-chart-line"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-reporte bg-warning bg-opacity-10">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Ticket Promedio</h6>
+                            <h3 class="mb-0">${{ "%.2f"|format(reporte_ventas.resumen.promedio_ticket|default(0)) }}</h3>
+                            <small class="text-warning">
+                                <i class="fas fa-receipt me-1"></i> Por venta
+                            </small>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-warning rounded-circle">
+                                <i class="fas fa-shopping-cart"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-reporte bg-danger bg-opacity-10">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Productos Bajo Stock</h6>
+                            <h3 class="mb-0">{{ reporte_inventario.productos_bajo_stock|default(0) }}</h3>
+                            <small class="text-danger">
+                                <i class="fas fa-exclamation-triangle me-1"></i> Requieren atención
+                            </small>
+                        </div>
+                        <div class="avatar-sm">
+                            <span class="avatar-title bg-danger rounded-circle">
+                                <i class="fas fa-boxes"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos y Tablas -->
+    <div class="row">
+        <!-- Gráfico de Ventas -->
+        <div class="col-md-8 mb-4">
+            <div class="card card-reporte">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Ventas por Día
+                    </h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown">
+                            <i class="fas fa-download me-1"></i> Exportar
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="exportarPDF()">
+                                <i class="fas fa-file-pdf me-2"></i>PDF
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="exportarExcel()">
+                                <i class="fas fa-file-excel me-2"></i>Excel
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="ventasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Métodos de Pago - CORREGIDO -->
+        <div class="col-md-4 mb-4">
+            <div class="card card-reporte">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-credit-card me-2"></i>Métodos de Pago
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="pagosChart"></canvas>
+                    </div>
+                    <div class="mt-3" id="lista-pagos">
+                        {% if reporte_ventas.por_tipo_pago %}
+                            {% for tipo, monto in reporte_ventas.por_tipo_pago.items() %}
+                                <!-- Calcular el color ANTES de usarlo -->
+                                {% if tipo == 'EFECTIVO' %}
+                                    {% set color_icono = '#28a745' %}
+                                {% elif tipo == 'TARJETA' %}
+                                    {% set color_icono = '#17a2b8' %}
+                                {% elif tipo == 'TRANSFERENCIA' %}
+                                    {% set color_icono = '#6c757d' %}
+                                {% else %}
+                                    {% set color_icono = '#999999' %}
+                                {% endif %}
+                                
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>
+                                        <i id="icono" class="fas fa-circle me-1"></i>
+<script>
+  document.getElementById("icono").style.color = color_icono;
+</script>
+
+                                    </span>
+                                    <strong>${{ "%.2f"|format(monto|default(0)) }}</strong>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted">
+                                <i class="fas fa-exclamation-circle"></i>
+                                No hay datos de pagos disponibles
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Productos Más Vendidos -->
+        <div class="col-md-6 mb-4">
+            <div class="card card-reporte">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star me-2"></i>Productos Más Vendidos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-end">Cantidad</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for producto in reporte_ventas.productos_mas_vendidos[:5] %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-xs me-2">
+                                                <span class="avatar-title bg-primary rounded">
+                                                    {{ producto.producto[:1] }}
+                                                </span>
+                                            </div>
+                                            {{ producto.producto }}
+                                        </div>
+                                    </td>
+                                    <td class="text-end">{{ "%.1f"|format(producto.cantidad|default(0)) }} kg</td>
+                                    <td class="text-end">${{ "%.2f"|format(producto.total|default(0)) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Productos Bajo Stock -->
+        <div class="col-md-6 mb-4">
+            <div class="card card-reporte">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Productos Bajo Stock
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-end">Stock Actual</th>
+                                    <th class="text-end">Umbral Mínimo</th>
+                                    <th class="text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for producto in reporte_inventario.productos_criticos[:5] %}
+                                <tr>
+                                    <td>{{ producto.nombre }}</td>
+                                    <td class="text-end">{{ "%.1f"|format(producto.stock|default(0)) }} kg</td>
+                                    <td class="text-end">{{ "%.1f"|format(producto.umbral|default(0)) }} kg</td>
+                                    <td class="text-center">
+                                        {% if producto.stock < producto.umbral * 0.3 %}
+                                        <span class="badge bg-danger">CRÍTICO</span>
+                                        {% elif producto.stock < producto.umbral %}
+                                        <span class="badge bg-warning">BAJO</span>
+                                        {% else %}
+                                        <span class="badge bg-success">OK</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Incluir Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// Variables globales para los gráficos
+let ventasChart = null;
+let pagosChart = null;
+
+// Cargar reporte inicial
+document.addEventListener('DOMContentLoaded', function() {
+    cargarReporte();
+});
+
+function cargarReporte() {
+    const fechaInicio = document.getElementById('fechaInicio').value;
+    const fechaFin = document.getElementById('fechaFin').value;
+    const tipoReporte = document.getElementById('tipoReporte').value;
+    
+    // Mostrar indicador de carga
+    Swal.fire({
+        title: 'Generando reporte...',
+        text: 'Por favor espera',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Obtener datos de la API
+    fetch(`/api/reporte-ventas?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`)
+        .then(response => response.json())
+        .then(data => {
+            Swal.close();
+            
+            // VERIFICACIÓN CORREGIDA
+            if (data && data.resumen) {
+                // Actualizar estadísticas
+                actualizarEstadisticas(data);
+                
+                // Actualizar gráficos
+                actualizarGraficos(data);
+                
+                // Actualizar tablas
+                actualizarTablas(data);
+                
+                showNotification('✅ Reporte generado', 'Datos actualizados correctamente');
+            } else {
+    const errorMsg = data.error || (data.message ? data.message : 'Error generando reporte');
+    showNotification('❌ Error', errorMsg, 'error');
+}
+        })
+        .catch(error => {
+            Swal.close();
+            showNotification('❌ Error', 'Error de conexión', 'error');
+            console.error('Error:', error);
+        });
+}
+
+function actualizarEstadisticas(data) {
+    // Actualizar ventas totales
+    const ventasCard = document.querySelector('.card-reporte.bg-success h3');
+    const ventasSmall = document.querySelector('.card-reporte.bg-success small');
+    if (ventasCard && ventasSmall && data.resumen) {
+        ventasCard.textContent = '$' + data.resumen.total_ventas.toFixed(2);
+        ventasSmall.innerHTML = `<i class="fas fa-arrow-up me-1"></i> ${data.resumen.cantidad_ventas || 0} ventas`;
+    }
+    
+    // Actualizar promedio diario
+    const promedioCard = document.querySelector('.card-reporte.bg-info h3');
+    const promedioSmall = document.querySelector('.card-reporte.bg-info small');
+    if (promedioCard && promedioSmall && data.resumen && data.periodo) {
+        promedioCard.textContent = '$' + data.resumen.promedio_diario.toFixed(2);
+        promedioSmall.innerHTML = `<i class="fas fa-calendar me-1"></i> ${data.periodo.dias || 1} días`;
+    }
+    
+    // Actualizar ticket promedio
+    const ticketCard = document.querySelector('.card-reporte.bg-warning h3');
+    if (ticketCard && data.resumen) {
+        ticketCard.textContent = '$' + data.resumen.promedio_ticket.toFixed(2);
+    }
+    
+    // Actualizar métodos de pago en la tarjeta
+    const pagosContainer = document.getElementById('lista-pagos');
+    if (pagosContainer && data.por_tipo_pago) {
+        let html = '';
+        for (const [tipo, monto] of Object.entries(data.por_tipo_pago)) {
+            let color;
+            if (tipo === 'EFECTIVO') {
+                color = '#28a745';
+            } else if (tipo === 'TARJETA') {
+                color = '#17a2b8';
+            } else if (tipo === 'TRANSFERENCIA') {
+                color = '#6c757d';
+            } else {
+                color = '#999999';
+            }
+            
+            html += `
+            <div class="d-flex justify-content-between mb-2">
+                <span>
+                    <i class="fas fa-circle me-1" style="color: ${color}"></i>
+                    ${tipo}
+                </span>
+                <strong>$${monto.toFixed(2)}</strong>
+            </div>`;
+        }
+        pagosContainer.innerHTML = html;
+    }
+}
+
+function actualizarGraficos(data) {
+    // Destruir gráficos anteriores si existen
+    if (ventasChart) ventasChart.destroy();
+    if (pagosChart) pagosChart.destroy();
+    
+    // Gráfico de ventas por día (línea)
+    const ctxVentas = document.getElementById('ventasChart').getContext('2d');
+    if (ctxVentas && data.ventas_por_dia) {
+        ventasChart = new Chart(ctxVentas, {
+            type: 'line',
+            data: {
+                labels: data.ventas_por_dia.map(d => d.fecha),
+                datasets: [{
+                    label: 'Ventas ($)',
+                    data: data.ventas_por_dia.map(d => d.total),
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfico de métodos de pago (dona)
+    const ctxPagos = document.getElementById('pagosChart').getContext('2d');
+    if (ctxPagos && data.por_tipo_pago) {
+        pagosChart = new Chart(ctxPagos, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(data.por_tipo_pago),
+                datasets: [{
+                    data: Object.values(data.por_tipo_pago),
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',    // Efectivo - verde
+                        'rgba(23, 162, 184, 0.8)',   // Tarjeta - azul
+                        'rgba(108, 117, 125, 0.8)'   // Transferencia - gris
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(23, 162, 184, 1)',
+                        'rgba(108, 117, 125, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+}
+
+function actualizarTablas(data) {
+    // Actualizar tabla de productos más vendidos
+    const tbodyProductos = document.querySelector('.table:first-child tbody');
+    if (tbodyProductos && data.productos_top) {
+        let htmlProductos = '';
+        data.productos_top.forEach((producto, index) => {
+            htmlProductos += `
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-xs me-2">
+                            <span class="avatar-title bg-primary rounded">
+                                ${producto.producto.charAt(0)}
+                            </span>
+                        </div>
+                        ${producto.producto}
+                    </div>
+                </td>
+                <td class="text-end">${producto.cantidad.toFixed(1)} kg</td>
+                <td class="text-end">$${producto.total.toFixed(2)}</td>
+            </tr>`;
+        });
+        tbodyProductos.innerHTML = htmlProductos;
+    }
+}
+
+function exportarPDF() {
+    const fechaInicio = document.getElementById('fechaInicio').value;
+    const fechaFin = document.getElementById('fechaFin').value;
+    
+    fetch('/api/reportes/exportar-pdf', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin,
+            tipo_reporte: 'ventas'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data && data.resumen) {
+            showNotification('✅ PDF generado', 
+                `Archivo: ${data.archivo}. Puedes descargarlo manualmente.`);
+        } else {
+            showNotification('❌ Error', 'No se pudo generar el PDF', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('❌ Error', 'Error de conexión', 'error');
+    });
+}
+
+function exportarExcel() {
+    const fechaInicio = document.getElementById('fechaInicio').value;
+    const fechaFin = document.getElementById('fechaFin').value;
+    
+    fetch('/api/reportes/exportar-excel', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin,
+            tipo_reporte: 'ventas'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data && data.resumen) {
+            showNotification('✅ Excel generado', 
+                `Archivo: ${data.archivo}. Puedes descargarlo manualmente.`);
+        } else {
+            showNotification('❌ Error', 'No se pudo generar el Excel', 'error');
+        }
+    })
+    .catch(error => {
+        showNotification('❌ Error', 'Error de conexión', 'error');
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2 mb-0">
+                <i class="fas fa-cash-register me-2"></i>
+                Gestión de Caja
+            </h1>
+            <p class="text-muted mb-0">Administre la caja diaria y movimientos</p>
+        </div>
+    </div>
+
+    <!-- Estado y Acciones -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Estado Actual
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="current-status" class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-play-circle me-2"></i>
+                        Acciones
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-lg" onclick="openCaja()" id="openCajaBtn">
+                            <i class="fas fa-lock-open me-2"></i> Abrir Caja
+                        </button>
+                        <button class="btn btn-success btn-lg" onclick="location.href='/ventas'">
+                            <i class="fas fa-cart-plus me-2"></i> Nueva Venta
+                        </button>
+                        <button class="btn btn-warning btn-lg" onclick="addExpense()">
+                            <i class="fas fa-minus-circle me-2"></i> Registrar Gasto
+                        </button>
+                        <button class="btn btn-danger btn-lg" onclick="closeCaja()" id="closeCajaBtn">
+                            <i class="fas fa-lock me-2"></i> Cerrar Caja
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movimientos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-dark d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Movimientos del Día
+                    </h5>
+                    <button class="btn btn-sm btn-outline-light" onclick="refreshMovements()">
+                        <i class="fas fa-sync-alt me-1"></i> Actualizar
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Hora</th>
+                                    <th>Tipo</th>
+                                    <th>Monto</th>
+                                    <th>Detalles</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movements-table">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Cargando...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para abrir caja -->
+<div class="modal fade" id="openCajaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-lock-open me-2"></i>
+                    Abrir Caja
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="openCajaForm">
+                    <div class="mb-3">
+                        <label for="montoInicial" class="form-label">Monto Inicial</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="montoInicial" 
+                                   step="0.01" min="0" value="1000" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="responsable" class="form-label">Responsable</label>
+                        <input type="text" class="form-control" id="responsable" 
+                               value="Administrador" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="submitOpenCaja()">
+                    <i class="fas fa-check me-1"></i> Abrir Caja
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Cargar estado inicial
+    function loadStatus() {
+        fetch('/api/estado-caja')
+            .then(response => response.json())
+            .then(data => {
+                updateStatus(data);
+            });
+    }
+    
+    // Actualizar estado
+    function updateStatus(data) {
+        const statusDiv = document.getElementById('current-status');
+        const openBtn = document.getElementById('openCajaBtn');
+        const closeBtn = document.getElementById('closeCajaBtn');
+        
+        if (data.estado === 'abierta') {
+            statusDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h4><i class="fas fa-check-circle me-2"></i>Caja Abierta</h4>
+                    <p><strong>Responsable:</strong> ${data.responsable}</p>
+                    <p><strong>Hora apertura:</strong> ${data.hora_apertura}</p>
+                    <p><strong>Fondo inicial:</strong> $${data.monto_inicial.toFixed(2)}</p>
+                    <p><strong>Efectivo esperado:</strong> $${data.efectivo_esperado.toFixed(2)}</p>
+                    <p><strong>Ventas totales:</strong> $${data.total_ventas.toFixed(2)} (${data.cantidad_ventas} ventas)</p>
+                </div>
+            `;
+            openBtn.disabled = true;
+            closeBtn.disabled = false;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="alert alert-warning">
+                    <h4><i class="fas fa-exclamation-triangle me-2"></i>Caja Cerrada</h4>
+                    <p>La caja no ha sido abierta hoy.</p>
+                    <p>Para comenzar a operar, abra la caja con un monto inicial.</p>
+                </div>
+            `;
+            openBtn.disabled = false;
+            closeBtn.disabled = true;
+        }
+    }
+    
+    // Abrir caja
+    function openCaja() {
+        const modal = new bootstrap.Modal(document.getElementById('openCajaModal'));
+        modal.show();
+    }
+    
+    // Enviar apertura de caja
+    function submitOpenCaja() {
+        const monto = document.getElementById('montoInicial').value;
+        const responsable = document.getElementById('responsable').value;
+        
+        fetch('/api/abrir-caja', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ monto, responsable })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('✅ Caja Abierta', `Caja abierta con $${monto} por ${responsable}`);
+                const modal = bootstrap.Modal.getInstance(document.getElementById('openCajaModal'));
+                modal.hide();
+                loadStatus();
+                refreshMovements();
+            } else {
+                showNotification('❌ Error', data.error || 'Error al abrir caja', 'error');
+            }
+        });
+    }
+    
+    // Cargar movimientos
+    function loadMovements() {
+        fetch('/api/movimientos')
+            .then(response => response.json())
+            .then(data => {
+                updateMovements(data.movimientos);
+            });
+    }
+    
+    // Actualizar tabla de movimientos
+    function updateMovements(movimientos) {
+        const tbody = document.getElementById('movements-table');
+        
+        if (!movimientos || movimientos.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">No hay movimientos registrados</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let html = '';
+        movimientos.reverse().forEach(mov => {
+            const tipoClass = mov.tipo === 'VENTA' ? 'success' : 'warning';
+            const tipoIcon = mov.tipo === 'VENTA' ? 'fa-cart-plus' : 'fa-money-bill-wave';
+            
+            html += `
+                <tr>
+                    <td>${mov.hora || 'N/A'}</td>
+                    <td>
+                        <span class="badge bg-${tipoClass}">
+                            <i class="fas ${tipoIcon} me-1"></i>
+                            ${mov.tipo}
+                        </span>
+                        ${mov.tipo_pago ? `<small class="ms-2">(${mov.tipo_pago})</small>` : ''}
+                    </td>
+                    <td class="fw-bold">$${mov.monto.toFixed(2)}</td>
+                    <td>${mov.detalles || mov.concepto || 'Sin detalles'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-info" onclick="viewMovement('${mov.fecha_hora}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+    
+    // Refrescar movimientos
+    function refreshMovements() {
+        loadMovements();
+    }
+    
+    // Cerrar caja
+    function closeCaja() {
+        Swal.fire({
+            title: 'Cerrar Caja',
+            text: 'Ingrese el efectivo real contado:',
+            input: 'number',
+            inputLabel: 'Efectivo real ($)',
+            inputValue: '',
+            showCancelButton: true,
+            confirmButtonText: 'Cerrar Caja',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || parseFloat(value) <= 0) {
+                    return 'Ingrese un monto válido';
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const efectivoReal = result.value;
+                
+                fetch('/api/cerrar-caja', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ efectivo_real: efectivoReal })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('✅ Caja Cerrada', 'Caja cerrada correctamente');
+                        loadStatus();
+                        refreshMovements();
+                    } else {
+                        showNotification('❌ Error', data.error || 'Error al cerrar caja', 'error');
+                    }
+                });
+            }
+        });
+    }
+    
+    // Registrar gasto
+                                     // En web/templates/caja.html, reemplaza la función addExpense() completa:
+function addExpense() {
+    Swal.fire({
+        title: 'Registrar Gasto',
+        html: `
+            <div class="mb-3">
+                <label class="form-label">Monto ($)</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input id="expense-amount" class="form-control" 
+                           placeholder="Monto" type="number" step="0.01" min="0.01">
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Concepto</label>
+                <input id="expense-concept" class="form-control" 
+                       placeholder="Descripción del gasto">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Categoría</label>
+                <select id="expense-category" class="form-select">
+                    <option value="GASTOS">Gastos Generales</option>
+                    <option value="SUMINISTROS">Suministros</option>
+                    <option value="MANTENIMIENTO">Mantenimiento</option>
+                    <option value="UTILES">Útiles</option>
+                    <option value="SERVICIOS">Servicios</option>
+                    <option value="IMPUESTOS">Impuestos</option>
+                    <option value="MERMA">Merma</option>
+                    <option value="OTROS">Otros</option>
+                </select>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Registrar',
+        cancelButtonText: 'Cancelar',
+        focusConfirm: false,
+        preConfirm: () => {
+            const amount = document.getElementById('expense-amount').value;
+            const concept = document.getElementById('expense-concept').value;
+            const category = document.getElementById('expense-category').value;
+            
+            // Validaciones
+            if (!amount || parseFloat(amount) <= 0) {
+                Swal.showValidationMessage('Ingrese un monto válido (mayor a 0)');
+                return false;
+            }
+            if (!concept || concept.trim() === '') {
+                Swal.showValidationMessage('Ingrese una descripción del gasto');
+                return false;
+            }
+            
+            return { amount, concept, category };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const { amount, concept, category } = result.value;
+            
+            // Mostrar carga
+            Swal.fire({
+                title: 'Registrando gasto...',
+                text: 'Por favor espere',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Enviar al backend
+            fetch('/api/registrar-gasto', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    descripcion: concept,
+                    monto: amount,
+                    categoria: category
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                Swal.close();
+                
+                if (data.success) {
+                    // Éxito
+                    showNotification('✅ Gasto Registrado', 
+                        `${concept} - $${parseFloat(amount).toFixed(2)} registrado correctamente`);
+                    
+                    // Actualizar estado de caja y movimientos
+                    loadStatus();
+                    refreshMovements();
+                    
+                    // Agregar al historial local para feedback inmediato
+                    const tbody = document.getElementById('movements-table');
+                    const ahora = new Date().toLocaleTimeString('es-ES', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                    
+                    if (tbody.rows.length === 1 && tbody.rows[0].cells[0].colSpan === 5) {
+                        // Tabla vacía
+                        tbody.innerHTML = '';
+                    }
+                    
+                    // Agregar nueva fila al inicio
+                    tbody.innerHTML = `
+                        <tr>
+                            <td>${ahora}</td>
+                            <td>
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-money-bill-wave me-1"></i>
+                                    GASTO
+                                </span>
+                                <small class="ms-2">(${category})</small>
+                            </td>
+                            <td class="fw-bold text-danger">-$${parseFloat(amount).toFixed(2)}</td>
+                            <td>${concept}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info" onclick="viewMovement('${data.gasto_id || ''}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    ` + tbody.innerHTML;
+                    
+                } else {
+                    // Error
+                    showNotification('❌ Error', data.error || 'Error al registrar gasto', 'error');
+                }
+            })
+            .catch(error => {
+                Swal.close();
+                showNotification('❌ Error', 'Error de conexión con el servidor', 'error');
+                console.error('Error:', error);
+            });
+        }
+    });
+}
+    
+    // Ver movimiento
+    function viewMovement(id) {
+        showNotification('👀 Detalles', 'Función de detalles en desarrollo', 'info');
+    }
+    
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', function() {
+        loadStatus();
+        loadMovements();
+        // Actualizar cada 10 segundos
+        setInterval(loadStatus, 10000);
+        setInterval(loadMovements, 10000);
+    });
+</script>
+{% endblock %}

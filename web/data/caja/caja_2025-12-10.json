@@ -1,0 +1,87 @@
+{
+  "apertura": {
+    "fecha_hora": "2025-12-10T01:08:49.178698",
+    "monto_inicial": 0.0,
+    "responsable": "Lucas",
+    "observaciones": "",
+    "hora_apertura": "01:08"
+  },
+  "cierre": {
+    "fecha_hora": "2025-12-10T17:33:57.719209",
+    "efectivo_real": 145.0,
+    "efectivo_esperado": 10138.425,
+    "diferencia": -9993.425,
+    "observaciones": "Cierre desde web",
+    "totales": {
+      "monto_inicial": 0.0,
+      "ventas_efectivo": 10138.425,
+      "ventas_tarjeta": 0,
+      "ventas_transferencia": 7.0,
+      "total_ventas": 10145.425,
+      "total_gastos": 0,
+      "efectivo_esperado": 10138.425,
+      "cantidad_ventas": 7,
+      "cantidad_gastos": 0
+    },
+    "hora_cierre": "17:33"
+  },
+  "movimientos": [
+    {
+      "tipo": "VENTA",
+      "tipo_pago": "EFECTIVO",
+      "monto": 10000.0,
+      "detalles": "",
+      "fecha_hora": "2025-12-10T01:09:13.056212",
+      "hora": "01:09"
+    },
+    {
+      "tipo": "VENTA",
+      "tipo_pago": "EFECTIVO",
+      "monto": 24.5,
+      "detalles": "Venta de 1 productos - Cliente: ramon",
+      "fecha_hora": "2025-12-10T01:22:10.555026",
+      "hora": "01:22"
+    },
+    {
+      "tipo": "VENTA",
+      "tipo_pago": "EFECTIVO",
+      "monto": 13.5,
+      "detalles": "Venta de 1 productos - Cliente: Susana Vargas",
+      "fecha_hora": "2025-12-10T12:07:47.167171",
+      "hora": "12:07"
+    },
+    {
+      "tipo": "VENTA",
+      "tipo_pago": "EFECTIVO",
+      "monto": 7.0,
+      "detalles": "Venta de 1 productos - Cliente: Susana Vargas",
+      "fecha_hora": "2025-12-10T12:40:41.032930",
+      "hora": "12:40"
+    },
+    {
+      "tipo": "VENTA",
+      "tipo_pago": "EFECTIVO",
+      "monto": 68.295,
+      "detalles": "Venta de 2 productos - Cliente: negro seba",
+      "fecha_hora": "2025-12-10T17:02:15.666567",
+      "hora": "17:02"
+    },
+    {
+      "tipo": "VENTA",
+      "tipo_pago": "EFECTIVO",
+      "monto": 25.13,
+      "detalles": "Venta de 1 productos - Cliente: pedro perez",
+      "fecha_hora": "2025-12-10T17:24:30.608061",
+      "hora": "17:24"
+    },
+    {
+      "tipo": "VENTA",
+      "tipo_pago": "TRANSFERENCIA",
+      "monto": 7.0,
+      "detalles": "Venta de 1 productos - Cliente: goku",
+      "fecha_hora": "2025-12-10T17:27:24.736630",
+      "hora": "17:27"
+    }
+  ],
+  "fecha_actualizacion": "2025-12-10T17:33:57.721281"
+}

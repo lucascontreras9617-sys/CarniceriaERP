@@ -1,0 +1,112 @@
+<!-- error_django.html - Mostrado cuando Django no está disponible -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Servicio de Reportes no disponible
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-server fa-5x text-danger mb-3"></i>
+                        <h3>Django Reportes no está ejecutándose</h3>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle me-2"></i>¿Qué pasó?</h5>
+                        <p>
+                            El sistema intentó conectarse a <code>{{ django_url }}</code>
+                            pero no recibió respuesta. Esto significa que la aplicación
+                            de reportes (Django) no está en ejecución.
+                        </p>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-dark">
+                                    <h6 class="mb-0">Solución Rápida</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ol class="text-start">
+                                        <li>Abre una nueva terminal</li>
+                                        <li>Navega al proyecto:
+                                            <pre class="mt-2"><code>cd ~/Escritorio/carniceria_erp/django_report</code></pre>
+                                        </li>
+                                        <li>Ejecuta Django:
+                                            <pre class="mt-2"><code>python manage.py runserver {{ config.LOCAL_IP }}:5000</code></pre>
+                                        </li>
+                                        <li>Vuelve aquí y recarga</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-dark">
+                                    <h6 class="mb-0">Opciones</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-primary" onclick="window.location.reload()">
+                                            <i class="fas fa-sync-alt me-2"></i>Reintentar conexión
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="location.href='/'">
+                                            <i class="fas fa-home me-2"></i>Volver al Dashboard
+                                        </button>
+                                        <button class="btn btn-outline-info" onclick="probarConexion()">
+                                            <i class="fas fa-wifi me-2"></i>Probar conexión
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-center text-muted">
+                        <small>
+                            <i class="fas fa-network-wired me-1"></i>
+                            Flask está funcionando en: <code>{{ flask_url }}</code>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function probarConexion() {
+    fetch('/api/sistema/estado')
+        .then(response => response.json())
+        .then(data => {
+            let html = '<h5>Estado del sistema:</h5><ul class="text-start">';
+            data.servicios.forEach(servicio => {
+                html += `<li><strong>${servicio.nombre}:</strong> ${servicio.estado}</li>`;
+            });
+            html += '</ul>';
+            
+            Swal.fire({
+                title: 'Prueba de conexión',
+                html: html,
+                icon: 'info',
+                confirmButtonText: 'Cerrar'
+            });
+        })
+        .catch(error => {
+            Swal.fire({
+                title: 'Error',
+                text: 'No se pudo verificar el estado del sistema',
+                icon: 'error'
+            });
+        });
+}
+</script>
+{% endblock %}

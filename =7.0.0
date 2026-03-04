@@ -1,0 +1,122 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-9.0.2, pluggy-1.6.0
+rootdir: /home/lucas/Escritorio/carniceria_erp
+collected 4 items
+
+tests/test_procesos.py F.FF                                              [100%]
+
+=================================== FAILURES ===================================
+____________ TestProcesos.test_01_proceso_despiece_actualiza_stock _____________
+
+self = <tests.test_procesos.TestProcesos testMethod=test_01_proceso_despiece_actualiza_stock>
+
+    def test_01_proceso_despiece_actualiza_stock(self):
+        """Prueba que el despiece actualice el stock del lote y los productos."""
+    
+        # Despiece: Procesar 10 kg
+        despiece = ProcesoDeDespiece(self.lote, 10.0)
+    
+        # Rendimiento: 8 kg de Solomillo, 2 kg de Merma implícita
+        rendimiento = {self.prod_vacio: 8.0}
+    
+>       despiece.ejecutar_proceso(rendimiento, self.prod_merma)
+
+tests/test_procesos.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <app.procesos.ProcesoDeDespiece object at 0x7ff2e04d5750>
+rendimiento = {<Corte: Solomillo | Stock: 8.00 kg | Venta: $25.00 | Costo: $4.00>: 8.0}
+producto_merma = <[TypeError('unsupported format string passed to NoneType.__format__') raised in repr()] ProductoElaborado object at 0x7ff2e03764d0>
+
+    def ejecutar_proceso(self, rendimiento: Dict[ProductoElaborado, float], producto_merma: ProductoElaborado):
+        """Ejecuta el movimiento de stock basado en la receta de rendimiento."""
+        if self.lote_origen.peso_restante < self.cantidad_a_procesar:
+            print("ERROR: Stock insuficiente en Lote.")
+            return
+    
+        peso_total_salida = sum(rendimiento.values())
+        merma_kg = self.cantidad_a_procesar - peso_total_salida
+    
+        # 1. Actualizar Lote
+        self.lote_origen.peso_restante -= self.cantidad_a_procesar
+    
+        # 2. Actualizar Productos
+        costo_referencia = self.lote_origen.costo_real_kg
+        for producto, cantidad in rendimiento.items():
+            producto.stock_actual += cantidad
+            # Mantenemos el costo real del lote como costo de última compra para el margen
+            producto.costo_ultima_compra = costo_referencia
+            self.resultados[producto.nombre] = cantidad
+    
+        # 3. Merma
+>       producto_merma.stock_actual += merma_kg
+E       TypeError: unsupported operand type(s) for +=: 'NoneType' and 'float'
+
+app/procesos.py:61: TypeError
+---------------------------- Captured stdout setup -----------------------------
+Base de datos ORM y tablas inicializadas en: sqlite:///data/carniceria_orm.db
+
+Base de datos de prueba en memoria inicializada.
+___________________ TestProcesos.test_03_alerta_margen_bajo ____________________
+
+self = <tests.test_procesos.TestProcesos testMethod=test_03_alerta_margen_bajo>
+
+    def test_03_alerta_margen_bajo(self):
+        """Prueba que se detecte una alerta cuando el margen sea inferior al 25%."""
+    
+        # 1. Preparar datos:
+        self.prod_vacio.stock_actual = 10.0
+        self.prod_vacio.costo_ultima_compra = 10.0 # Costo: $10
+        self.prod_vacio.precio_venta = 12.0      # Venta: $12. Margen: (12-10)/12 = 16.6% (< 25%)
+    
+        manager = ReporteManager([], [], [self.prod_vacio])
+    
+        # Capturamos la salida de la consola para verificar el mensaje
+>       with self.assertLogs(level=logging.INFO) as cm:
+
+tests/test_procesos.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.11/unittest/_log.py:84: in __exit__
+    self._raiseFailure(
+E   AssertionError: no logs of level INFO or higher triggered on root
+----------------------------- Captured stdout call -----------------------------
+
+--- REPORTE MARGEN (Mínimo 25%) ---
+Solomillo: Margen 16.67% (Costo: $10.00 / Venta: $12.00)
+🚨 ALERTA MARGEN: El precio de Solomillo es muy bajo.
+__________________ TestProcesos.test_04_alerta_limite_credito __________________
+
+self = <tests.test_procesos.TestProcesos testMethod=test_04_alerta_limite_credito>
+
+    def test_04_alerta_limite_credito(self):
+        """Prueba que se dispare la alerta cuando el saldo supera el 90% del límite."""
+    
+        # Límite: 1000.0. 90% es 900.0
+        self.cliente_may.saldo_pendiente = 950.0 # Saldo > 90%
+    
+        manager = CreditoManager([], [self.cliente_may])
+    
+        # Capturamos la salida de la consola para verificar el mensaje
+>       with self.assertLogs(level=logging.INFO) as cm:
+
+tests/test_procesos.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.11/unittest/_log.py:84: in __exit__
+    self._raiseFailure(
+E   AssertionError: no logs of level INFO or higher triggered on root
+----------------------------- Captured stdout call -----------------------------
+
+--- ALERTAS CRÉDITO (LÍMITES) ---
+⚠️ ALERTA LÍMITE: Supermercado XYZ (Saldo: $950.00 / Límite: $1000.00)
+--------------------------------------------------
+=============================== warnings summary ===============================
+app/modelos.py:12
+  /home/lucas/Escritorio/carniceria_erp/app/modelos.py:12: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_procesos.py::TestProcesos::test_01_proceso_despiece_actualiza_stock
+FAILED tests/test_procesos.py::TestProcesos::test_03_alerta_margen_bajo - Ass...
+FAILED tests/test_procesos.py::TestProcesos::test_04_alerta_limite_credito - ...
+==================== 3 failed, 1 passed, 1 warning in 0.68s ====================
